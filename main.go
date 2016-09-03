@@ -3,6 +3,7 @@ package main
 import (
     "flag"
     "log"
+    "time"
     "net/http"
     "text/template"
 
@@ -24,7 +25,6 @@ func testPage(w http.ResponseWriter, r *http.Request) {
 
 func videoInHandler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Access-Control-Allow-Origin", "*")
-    log.Println("here")
     ws, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Println(err)
@@ -42,8 +42,26 @@ func videoInHandler(w http.ResponseWriter, r *http.Request) {
     }()
 }
 
+func videoOutHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+    ws, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        log.Println(err)
+        return
+    }
+    go func() {
+        for {
+            if err = ws.WriteMessage(websocket.TextMessage, []byte{1, 2, 3}); err != nil {
+                return
+            }
+            time.Sleep(time.Millisecond * 3000)
+        }
+    }()
+}
+
 func main() {
     http.HandleFunc("/test", testPage)
-    http.HandleFunc("/", videoInHandler)
+    http.HandleFunc("/video/in", videoInHandler)
+    http.HandleFunc("/video/out", videoOutHandler)
     log.Fatal(http.ListenAndServe(*addr, nil))
 }
