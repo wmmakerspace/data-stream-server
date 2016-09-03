@@ -1,8 +1,9 @@
 package main
 
 import (
+    "os"
     "log"
-    "time"
+    "bufio"
 
     "golang.org/x/net/websocket"
 )
@@ -16,13 +17,12 @@ func main() {
         log.Fatal(err)
     }
 
-    message := []byte("hello")
+    s := bufio.NewScanner(os.Stdin)
 
-    for {
-        _, err = ws.Write(message)
+    for s.Scan() {
+        _, err = ws.Write([]byte(s.Bytes()))
         if err != nil {
             log.Fatal(err)
         }
-        time.Sleep(time.Millisecond * 3000)
     }
 }

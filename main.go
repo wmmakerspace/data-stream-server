@@ -3,7 +3,6 @@ package main
 import (
     "flag"
     "log"
-    "time"
     "net/http"
     "text/template"
 
@@ -23,6 +22,8 @@ func testPage(w http.ResponseWriter, r *http.Request) {
     pageTemplate.Execute(w, r.Host)
 }
 
+var video = make(chan []byte)
+
 func videoInHandler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Access-Control-Allow-Origin", "*")
     ws, err := upgrader.Upgrade(w, r, nil)
@@ -30,6 +31,7 @@ func videoInHandler(w http.ResponseWriter, r *http.Request) {
         log.Println(err)
         return
     }
+
     go func() {
         for {
             _, p, err := ws.ReadMessage()
@@ -37,7 +39,7 @@ func videoInHandler(w http.ResponseWriter, r *http.Request) {
                 log.Println(err)
                 return
             }
-            log.Println(p)
+            video <- p
         }
     }()
 }
@@ -49,12 +51,18 @@ func videoOutHandler(w http.ResponseWriter, r *http.Request) {
         log.Println(err)
         return
     }
+    // https://github.com/phoboslab/jsmpeg/blob/master/stream-server.js#L23-L27
+    header := []byte{0x6a, 0x73, 0x6d, 0x70, 0x01, 0x40, 0x00, 0xf0}
+    if err := ws.WriteMessage(websocket.BinaryMessage, header); err != nil {
+        log.Println(err)
+        return
+    }
     go func() {
         for {
-            if err = ws.WriteMessage(websocket.TextMessage, []byte{1, 2, 3}); err != nil {
+            msg := <- video
+            if err = ws.WriteMessage(websocket.BinaryMessage, msg); err != nil {
                 return
             }
-            time.Sleep(time.Millisecond * 3000)
         }
     }()
 }
