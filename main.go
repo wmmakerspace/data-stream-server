@@ -1,10 +1,10 @@
 package main
 
 import (
-    "flag"
+    "fmt"
     "log"
+    "flag"
     "net/http"
-    "text/template"
 
     "github.com/gorilla/websocket"
 )
@@ -17,20 +17,19 @@ var upgrader = websocket.Upgrader{
     },
 }
 
-func testPage(w http.ResponseWriter, r *http.Request) {
-    var pageTemplate = template.Must(template.ParseFiles("index.html"))
-    pageTemplate.Execute(w, r.Host)
-}
-
 var video = make(chan []byte)
 
 func videoInHandler(w http.ResponseWriter, r *http.Request) {
+    // enable CORS
     w.Header().Set("Access-Control-Allow-Origin", "*")
+
     ws, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Println(err)
         return
     }
+
+    log.Println("new video source connected: " + ws.RemoteAddr().String())
 
     go func() {
         for {
@@ -45,22 +44,29 @@ func videoInHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func videoOutHandler(w http.ResponseWriter, r *http.Request) {
+    // enable CORS
     w.Header().Set("Access-Control-Allow-Origin", "*")
+
     ws, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Println(err)
         return
     }
+
+    log.Println("new video client: " + ws.RemoteAddr().String())
+
     // https://github.com/phoboslab/jsmpeg/blob/master/stream-server.js#L23-L27
     header := []byte{0x6a, 0x73, 0x6d, 0x70, 0x01, 0x40, 0x00, 0xf0}
     if err := ws.WriteMessage(websocket.BinaryMessage, header); err != nil {
         log.Println(err)
         return
     }
+
     go func() {
         for {
-            msg := <- video
-            if err = ws.WriteMessage(websocket.BinaryMessage, msg); err != nil {
+            if err = ws.WriteMessage(websocket.BinaryMessage, <-video); err != nil {
+                log.Println(err)
+                log.Println("CLOSED: " + ws.RemoteAddr().String())
                 return
             }
         }
@@ -68,8 +74,9 @@ func videoOutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-    http.HandleFunc("/test", testPage)
     http.HandleFunc("/video/in", videoInHandler)
     http.HandleFunc("/video/out", videoOutHandler)
+    fmt.Println("Server listening on port :8080")
+    fmt.Println("------------------------------")
     log.Fatal(http.ListenAndServe(*addr, nil))
 }
