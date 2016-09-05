@@ -2,20 +2,28 @@ package main
 
 import (
     "os"
+    "fmt"
     "log"
+    "flag"
     "bytes"
     "bufio"
 
     "golang.org/x/net/websocket"
 )
 
-var origin = "http://localhost/"
-var url = "ws://localhost:8080/video/in"
+var origin = flag.String("origin", "http://localhost/", "origin")
+var url = flag.String("url", "", "url of websocket")
 
 var BUFFER_LEN = 8
 
 func main() {
-    ws, err := websocket.Dial(url, "", origin)
+    flag.Parse()
+    fmt.Println(*url)
+    if *url == "" {
+        fmt.Println("no url provided")
+        os.Exit(1)
+    }
+    ws, err := websocket.Dial(*url, "", *origin)
     if err != nil {
         log.Fatal(err)
     }
