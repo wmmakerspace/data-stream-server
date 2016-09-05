@@ -4,14 +4,19 @@ import (
     "fmt"
     "log"
     "flag"
+    "strings"
+    "strconv"
     "net/http"
 
     "github.com/gorilla/websocket"
 )
 
 var addr = flag.String("addr", "127.0.0.1:8080", "http service address")
-var sources = make(map[*VideoSource]bool)
+var sources = make(map[int]*VideoSource)
+// TODO: protect this
+var sourceId = 0
 
+// allow CORS
 var upgrader = websocket.Upgrader{
     CheckOrigin: func(r *http.Request) bool {
         return true
@@ -47,6 +52,7 @@ type VideoSource struct {
     clients map[*Client]bool
     register chan *Client
     unregister chan *Client
+    id int
 }
 
 func (v *VideoSource) run() {
@@ -65,21 +71,26 @@ func (v *VideoSource) run() {
     }
 }
 
+func newVideoSource() *VideoSource {
+    sourceId++
+    return &VideoSource{
+        video: make(chan []byte),
+        clients: make(map[*Client]bool),
+        register: make(chan *Client),
+        unregister: make(chan *Client),
+        id: sourceId,
+    }
+}
+
 func videoInHandler(w http.ResponseWriter, r *http.Request) {
-    // enable CORS
-    w.Header().Set("Access-Control-Allow-Origin", "*")
     ws, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Println(err)
         return
     }
-    vs := VideoSource{
-        video: make(chan []byte),
-        clients: make(map[*Client]bool),
-        register: make(chan *Client),
-        unregister: make(chan *Client),
-    }
-    sources[&vs] = true
+    vs := newVideoSource()
+    http.HandleFunc("/video/out/" + strconv.Itoa(vs.id), videoOutHandler)
+    sources[vs.id] = vs
     go vs.run()
     go func() {
         for {
@@ -94,29 +105,27 @@ func videoInHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func videoOutHandler(w http.ResponseWriter, r *http.Request) {
-    // enable CORS
-    w.Header().Set("Access-Control-Allow-Origin", "*")
+    url := strings.Split(r.URL.String(), "/")
+    reqSourceId, err := strconv.Atoi(url[len(url) - 1])
+    if err != nil {
+        log.Println(err)
+        return
+    }
     ws, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Println(err)
         return
     }
-    // TODO CHANGE THIS!!!
-    var source *VideoSource
-    for k := range sources {
-        source = k
-    }
     client := Client{
         ws: ws,
         video: make(chan []byte),
-        source: source,
+        source: sources[reqSourceId],
     }
     go client.run()
 }
 
 func main() {
     http.HandleFunc("/video/in", videoInHandler)
-    http.HandleFunc("/video/out", videoOutHandler)
 
     fmt.Println("Server listening on port :8080")
     fmt.Println("------------------------------")
