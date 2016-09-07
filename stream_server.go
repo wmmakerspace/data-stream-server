@@ -35,9 +35,6 @@ type Client struct {
 }
 
 func (c *Client) run() {
-    // TODO: remove this
-    // https://github.com/phoboslab/jsmpeg/blob/master/stream-server.js#L23-L27
-    header := []byte{0x6a, 0x73, 0x6d, 0x70, 0x01, 0x40, 0x00, 0xf0}
     if err := c.ws.WriteMessage(websocket.BinaryMessage, header); err != nil {
         log.Println(err)
         return
@@ -67,7 +64,6 @@ type DataSource struct {
 
 func (v *DataSource) run() {
     for {
-        //println(3)
         select {
         case client := <-v.register:
             v.clients[client] = true
@@ -79,7 +75,6 @@ func (v *DataSource) run() {
                 client.data <- data
             }
         }
-        //println(4)
     }
 }
 

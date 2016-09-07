@@ -10,19 +10,19 @@ This directly includes useful scripts for developing and testing the library.
 
 First start the example service:
 
-```go
+```sh
 go run example/main.go
 ```
 
 Then start the data source:
 
-```go
+```sh
 go run test/source.go
 ```
 
 Then start the client:
 
-```go
+```sh
 go run test/ingest.go
 ```
 

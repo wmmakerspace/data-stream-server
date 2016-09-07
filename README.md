@@ -24,3 +24,8 @@ The library exposes 3 endpoints under the user defined endpoint:
 - `/out/<source_id>`: clients stream data from this enpoint
 
 - `list`: returns a JSON array or currently available source ids
+
+
+### Developing
+
+See `[/test](/test)` for helper scripts
