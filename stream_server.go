@@ -43,11 +43,15 @@ func (c *Client) run() {
         return
     }
     c.source.register <- c
+    defer func() {
+        c.source.unregister <- c
+    }()
     for {
-        if err := c.ws.WriteMessage(websocket.BinaryMessage, <-c.data); err != nil {
+        d := <- c.data
+        if err := c.ws.WriteMessage(websocket.BinaryMessage, d); err != nil {
             log.Println(err)
             log.Println("CLOSED: " + c.ws.RemoteAddr().String())
-            c.source.unregister <- c
+            c.ws.Close()
             return
         }
     }
@@ -63,10 +67,11 @@ type DataSource struct {
 
 func (v *DataSource) run() {
     for {
+        //println(3)
         select {
-        case client := <- v.register:
+        case client := <-v.register:
             v.clients[client] = true
-        case client := <- v.unregister:
+        case client := <-v.unregister:
             delete(v.clients, client)
             close(client.data)
         case data := <- v.data:
@@ -74,6 +79,7 @@ func (v *DataSource) run() {
                 client.data <- data
             }
         }
+        //println(4)
     }
 }
 
@@ -96,8 +102,9 @@ func DataInHandler(w http.ResponseWriter, r *http.Request) {
     }
     ds := newDataSource()
     // TODO: remove handler when the source goes away
-    http.HandleFunc("/video/out/" + strconv.Itoa(ds.id), DataOutHandler)
+    http.HandleFunc(endpoint + "/out/" + strconv.Itoa(ds.id), DataOutHandler)
     sources[ds.id] = ds
+    log.Println("new data source connected: " + strconv.Itoa(ds.id))
     go ds.run()
     go func() {
         for {
@@ -105,7 +112,6 @@ func DataInHandler(w http.ResponseWriter, r *http.Request) {
             if err != nil {
                 log.Println(err)
                 delete(sources, ds.id)
-                close(ds.data)
                 return
             }
             ds.data <- p
@@ -120,6 +126,7 @@ func DataOutHandler(w http.ResponseWriter, r *http.Request) {
         log.Println(err)
         return
     }
+    log.Println("new client connected to: " + strconv.Itoa(reqSourceId))
     ws, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Println(err)
@@ -130,7 +137,7 @@ func DataOutHandler(w http.ResponseWriter, r *http.Request) {
         data: make(chan []byte),
         source: sources[reqSourceId],
     }
-    go client.run()
+    client.run()
 }
 
 func ListStreams(w http.ResponseWriter, r *http.Request) {
