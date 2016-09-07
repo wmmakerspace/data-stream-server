@@ -35,10 +35,6 @@ type Client struct {
 }
 
 func (c *Client) run() {
-    if err := c.ws.WriteMessage(websocket.BinaryMessage, header); err != nil {
-        log.Println(err)
-        return
-    }
     c.source.register <- c
     defer func() {
         c.source.unregister <- c
