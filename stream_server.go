@@ -58,10 +58,6 @@ func DataOutHandler(w http.ResponseWriter, r *http.Request) {
         fmt.Println(err)
         return
     }
-    if err := ws.WriteMessage(websocket.BinaryMessage, []byte{0x6a, 0x73, 0x6d, 0x70, 0x01, 0x40, 0x00, 0xf0}); err != nil {
-        fmt.Println(err)
-        return
-    }
     sources[sourceId][ws] = true
 }
 
