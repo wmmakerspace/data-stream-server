@@ -1,12 +1,14 @@
 package streamserver
 
 import (
-    "net/http"
-    "github.com/gorilla/websocket"
     "fmt"
+    "sync"
     "strings"
     "strconv"
-    "sync"
+    "net/http"
+    "encoding/json"
+
+    "github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
@@ -61,6 +63,16 @@ func DataOutHandler(w http.ResponseWriter, r *http.Request) {
     sources[sourceId][ws] = true
 }
 
+func ListStreams(w http.ResponseWriter, r *http.Request) {
+    sourceIds := make([]string, 0, len(sources))
+    for k := range sources {
+        sourceIds = append(sourceIds, k)
+    }
+    encoder := json.NewEncoder(w)
+    encoder.Encode(sourceIds)
+}
+
 func Start(endpoint string) {
+    http.HandleFunc(endpoint + "/list", ListStreams)
     http.HandleFunc(endpoint + "/in", DataInHandler)
 }
