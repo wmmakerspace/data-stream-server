@@ -2,6 +2,7 @@ package streamserver
 
 import (
     "fmt"
+    "log"
     "sync"
     "strings"
     "strconv"
@@ -27,6 +28,8 @@ func DataInHandler(w http.ResponseWriter, r *http.Request) {
     sourceId++
     sourceIdMutex.Unlock()
     sources[idStr] = make(map[*websocket.Conn]bool)
+
+    log.Println("new data source: " +  idStr)
 
     ws, err := upgrader.Upgrade(w, r, nil)
 
@@ -61,6 +64,7 @@ func DataOutHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
     sources[sourceId][ws] = true
+    log.Println("new client connected to: " + sourceId)
 }
 
 func ListStreams(w http.ResponseWriter, r *http.Request) {
