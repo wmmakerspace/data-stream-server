@@ -11,14 +11,18 @@ import (
     "golang.org/x/net/websocket"
 )
 
+// metadata header delimiter
+var DELIMITER byte = '|'
+
 var origin = flag.String("origin", "http://localhost/", "origin")
 var url = flag.String("url", "", "url of websocket")
+var metadata = flag.String("metadata", "", "metadata")
 
 var BUFFER_LEN = 8
 
 func main() {
     flag.Parse()
-    fmt.Println(*url)
+
     if *url == "" {
         fmt.Println("no url provided")
         os.Exit(1)
@@ -28,11 +32,17 @@ func main() {
         log.Fatal(err)
     }
 
+    // write header
+    if _, err = ws.Write(append([]byte(*metadata), DELIMITER)); err != nil {
+        log.Fatal(err)
+    }
+
     s := bufio.NewScanner(os.Stdin)
     s.Split(bufio.ScanBytes)
 
     i := 0
     var buffer bytes.Buffer
+
 
     for s.Scan() {
         i++

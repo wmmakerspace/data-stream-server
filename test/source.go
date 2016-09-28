@@ -11,6 +11,12 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
+
+    // write header
+    if _, err = ws.Write([]byte("{\"name\": \"test source\"}|")); err != nil {
+        log.Fatal(err)
+    }
+
     for {
         if _, err = ws.Write([]byte("1")); err != nil {
             log.Fatal(err)
