@@ -5,7 +5,7 @@ import (
     "golang.org/x/net/websocket"
 )
 
-// injest data from the server
+// ingest data from the server
 func main() {
     ws, err := websocket.Dial("ws://localhost:8080/data/out/1", "", "http://localhost")
     if err != nil {

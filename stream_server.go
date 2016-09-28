@@ -18,6 +18,7 @@ var upgrader = websocket.Upgrader{
     },
 }
 
+var header []byte
 var sourceId = 1;
 var sourceIdMutex = &sync.Mutex{}
 var sources = make(map[string]map[*websocket.Conn]bool)
@@ -63,8 +64,17 @@ func DataOutHandler(w http.ResponseWriter, r *http.Request) {
         fmt.Println(err)
         return
     }
+
+    if header != nil {
+        if err := ws.WriteMessage(websocket.BinaryMessage, header); err != nil {
+            log.Println(err)
+            return
+        }
+    }
+
     sources[sourceId][ws] = true
     log.Println("new client connected to: " + sourceId)
+
 }
 
 func ListStreams(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +86,8 @@ func ListStreams(w http.ResponseWriter, r *http.Request) {
     encoder.Encode(sourceIds)
 }
 
-func Start(endpoint string) {
+func Start(endpoint string, h []byte) {
+    header = h
     http.HandleFunc(endpoint + "/list", ListStreams)
     http.HandleFunc(endpoint + "/in", DataInHandler)
 }
