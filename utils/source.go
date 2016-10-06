@@ -7,6 +7,7 @@ import (
     "flag"
     "bytes"
     "bufio"
+    "encoding/base64"
 
     "golang.org/x/net/websocket"
 )
@@ -14,9 +15,10 @@ import (
 // metadata header delimiter
 var DELIMITER byte = '|'
 
-var origin   = flag.String("origin", "http://localhost/", "origin")
-var url      = flag.String("url", "", "url of websocket")
-var metadata = flag.String("metadata", "", "metadata")
+var origin          = flag.String("origin", "http://localhost/", "origin")
+var url             = flag.String("url", "", "url of websocket")
+var metadata        = flag.String("metadata", "", "metadata")
+var videoMagicBytes = flag.Bool("video-magic-bytes", false, "video magic bytes")
 
 var BUFFER_LEN = 8
 
@@ -33,9 +35,28 @@ func main() {
         log.Fatal(err)
     }
 
-    // write header
-    if _, err = ws.Write(append([]byte(*metadata), DELIMITER)); err != nil {
-        log.Fatal(err)
+    header := "|{"
+
+    if *metadata != "" {
+        header += "\"metadata\":\"" + *metadata + "\""
+    }
+
+    if *videoMagicBytes {
+        comma := ","
+        if *metadata == "" {
+            comma = ""
+        }
+        magicBytes := base64.StdEncoding.EncodeToString([]byte{0x6a, 0x73, 0x6d, 0x70, 0x01, 0x40, 0x00, 0xf0})
+        header += comma + "\"magicBytes\": \"" + magicBytes + "\""
+    }
+
+    header += "}|"
+
+    if header != "|{}|" {
+        // write header
+        if _, err = ws.Write([]byte(header)); err != nil {
+            log.Fatal(err)
+        }
     }
 
     s := bufio.NewScanner(os.Stdin)

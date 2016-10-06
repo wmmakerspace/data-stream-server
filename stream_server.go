@@ -7,6 +7,7 @@ import (
     "strconv"
     "net/http"
     "encoding/json"
+    "encoding/base64"
 
     "github.com/gorilla/websocket"
 )
@@ -137,10 +138,18 @@ func DataInHandler(w http.ResponseWriter, r *http.Request) {
         var dat map[string]interface{}
         if err := json.Unmarshal(sourceHeader, &dat); err != nil {
             // can't parse header JSON. Bail
+            log.Println("Cannot decode JSON header")
             log.Println(err)
             return
         }
-        magicBytes[idStr] = []byte(dat["magicBytes"].(string))
+
+        decodedData, err := base64.StdEncoding.DecodeString((dat["magicBytes"].(string)))
+        if err != nil {
+            log.Println("Cannot base64 decode header magic bytes")
+            log.Println(err)
+            return
+        }
+        magicBytes[idStr] = decodedData
         metadata[idStr] = dat["metadata"].(string)
         log.Println("source (" + idStr + ") magic bytes: " + string(magicBytes[idStr]))
         log.Println("source (" + idStr + ") metadata: " + metadata[idStr])

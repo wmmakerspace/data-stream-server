@@ -11,7 +11,7 @@ var HEADER_DELIMITER = "|"
 var host     = flag.String("host", "localhost", "host")
 var port     = flag.String("port", "8080", "port")
 var endpoint = flag.String("endpoint", "data", "endpoint")
-var header   = flag.String("header", "{\"magicBytes\": \"1234\", \"metadata\": \"hello world\"}", "header")
+var header   = flag.String("header", "{\"magicBytes\": \"hello\", \"metadata\": \"{}\"}", "header")
 
 // stream data into the server
 func main() {
