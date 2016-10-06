@@ -5,7 +5,7 @@ Streaming data server
 
 ### Usage
 
-See `example/main.go` for an example
+See `example/server.go` for an example server
 
 ```go
 import "github.com/wmmakerspace/data-stream-server"
@@ -23,9 +23,11 @@ The library exposes 3 endpoints under the user defined endpoint:
 
 - `/out/<source_id>`: clients stream data from this enpoint
 
-- `list`: returns a JSON array or currently available source ids
+- `/list`: returns a JSON array or currently available source ids
+
+- `/out/<source_id>/metadata`: returns whatever metadata a data source supplies
 
 
 ### Developing
 
-See `[/test](/test)` for helper scripts
+See [`/test`](/test) for helper scripts

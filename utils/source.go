@@ -14,8 +14,8 @@ import (
 // metadata header delimiter
 var DELIMITER byte = '|'
 
-var origin = flag.String("origin", "http://localhost/", "origin")
-var url = flag.String("url", "", "url of websocket")
+var origin   = flag.String("origin", "http://localhost/", "origin")
+var url      = flag.String("url", "", "url of websocket")
 var metadata = flag.String("metadata", "", "metadata")
 
 var BUFFER_LEN = 8
@@ -27,6 +27,7 @@ func main() {
         fmt.Println("no url provided")
         os.Exit(1)
     }
+
     ws, err := websocket.Dial(*url, "", *origin)
     if err != nil {
         log.Fatal(err)
